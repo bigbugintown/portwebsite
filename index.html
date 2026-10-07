@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI/UX Portfolio | Dress Up Game Case Study</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0d0d12;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+        }
+        header {
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid #2a2a35;
+        }
+        header h1 { font-size: 2.5rem; color: #fff; margin-bottom: 10px; }
+        header p { font-size: 1.1rem; color: #a0a0b0; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+        .case-study { background: #15151e; border: 1px solid #2a2a35; border-radius: 12px; padding: 40px; margin-bottom: 40px; }
+        .case-study h2 { margin-bottom: 20px; color: #fff; font-size: 2rem; }
+        .case-study p { margin-bottom: 30px; color: #b0b0c0; max-width: 800px; }
+        
+        /* --- GAME CONTAINER EMBED --- */
+        .game-wrapper { display: flex; justify-content: center; margin-top: 40px; }
+        #game-container {
+            position: relative; width: 960px; height: 540px;
+            background-image: url('bedroom_bg.png'); background-color: #120917;
+            background-size: cover; background-position: center;
+            border: 6px solid #24140a; border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            font-family: 'Courier New', Courier, monospace; color: #fce8cc;
+            overflow: hidden; user-select: none;
+        }
+
+        #play-area { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+        .sprite-layer {
+            position: absolute; bottom: 25px; left: 33%; transform: translateX(-50%);
+            image-rendering: pixelated; width: 260px; height: auto; pointer-events: none;
+        }
+        
+        /* Strict Z-Index Layering to support all 138 asset overlaps */
+        #sprite-base { z-index: 10; }
+        #layer-tights { z-index: 11; }
+        #layer-socks { z-index: 12; }
+        #layer-bodysuit { z-index: 13; }
+        #layer-bottoms { z-index: 14; }
+        #layer-shoes { z-index: 15; }
+        #layer-tops { z-index: 16; }
+        #layer-dresses { z-index: 17; }
+        #layer-belts { z-index: 18; }
+        #layer-layers { z-index: 19; }
+        #layer-outer { z-index: 20; }
+        #layer-jewelry { z-index: 21; }
+        #layer-bags { z-index: 22; }
+        #layer-hair-acc { z-index: 23; }
+
+        #wardrobe-panel {
+            position: absolute; right: 30px; bottom: 25px; width: 440px; height: 480px;
+            background: linear-gradient(135deg, #3a2214, #221209, #2b170c);
+            border: 10px solid #1c0e06; border-radius: 2px 2px 0 0;
+            box-shadow: -15px 15px 25px rgba(0,0,0,0.7), inset 0 0 40px rgba(0,0,0,0.9);
+            padding: 15px; display: flex; flex-direction: column; pointer-events: auto; z-index: 100;
+        }
+        #wardrobe-panel::before {
+            content: ''; position: absolute; top: -20px; left: -15px; right: -15px; height: 10px;
+            background: #140904; border-bottom: 3px solid #2a160b;
+        }
+        #catalog-header {
+            text-align: center; font-weight: bold; font-size: 1.2rem; color: #d1b896;
+            text-shadow: 2px 2px 4px #000; margin-bottom: 12px; border-bottom: 2px groove #4a2b1a;
+            padding-bottom: 8px; letter-spacing: 2px;
+        }
+        
+        #tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
+        .tab-btn {
+            background: linear-gradient(to bottom, #4a2b1a, #2b170c); border: 1px solid #140904;
+            border-bottom: 3px solid #140904; padding: 6px 0px; font-size: 0.60rem; color: #d1b896;
+            font-family: inherit; font-weight: bold; cursor: pointer; text-align: center;
+        }
+        .tab-btn.active, .tab-btn:hover { background: linear-gradient(to bottom, #613b26, #3a2214); color: #fff; }
+        
+        #item-grid {
+            flex-grow: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            overflow-y: auto; padding: 10px; background: #120904; box-shadow: inset 0 5px 15px rgba(0,0,0,0.9);
+            border: 2px solid #0a0401;
+        }
+        #item-grid::-webkit-scrollbar { width: 8px; }
+        #item-grid::-webkit-scrollbar-track { background: #120904; }
+        #item-grid::-webkit-scrollbar-thumb { background: #3a2214; border-radius: 4px; }
+        
+        .item-card {
+            background: rgba(43, 23, 12, 0.4); border-bottom: 4px solid #221209; border-radius: 2px;
+            padding: 5px; display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative;
+        }
+        .item-card:hover { background: rgba(74, 43, 26, 0.6); }
+        .item-card.equipped { background: rgba(97, 59, 38, 0.7); border-bottom-color: #79ff4d; }
+        .item-card.equipped::after { content: '★'; position: absolute; top: 2px; right: 4px; color: #79ff4d; }
+        .item-thumb { width: 50px; height: 50px; background-size: contain; background-repeat: no-repeat; background-position: center; image-rendering: pixelated; }
+        .item-id { font-size: 0.50rem; margin-top: 5px; color: #a48e77; text-align: center; line-height: 1.2; }
+
+        #controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; border-top: 2px groove #4a2b1a; padding-top: 12px; }
+        .control-btn { background: #2b170c; border: 1px solid #140904; color: #d1b896; font-size: 0.75rem; padding: 8px; cursor: pointer; font-weight: bold; }
+        .control-btn:hover { background: #4a2b1a; color: #fff; }
+
+        #prompt-bar {
+            position: absolute; bottom: 25px; left: 25px; background: rgba(18, 9, 23, 0.85); border: 2px solid #4a2754;
+            padding: 8px 12px; font-size: 0.85rem; border-radius: 4px; max-width: 250px; box-shadow: 0 0 10px rgba(0,0,0,0.7); pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>My UI/UX Portfolio</h1>
+        <p>Junior Designer | Pixel Artist | Frontend Developer</p>
+    </header>
+
+    <div class="container">
+        <section class="case-study">
+            <h2>Case Study: Goth Punk Dress-Up Game</h2>
+            <p>V0.2 Master Integration: Featuring 138 modular assets with automated strict z-index grouping for flawless pixel layering across 13 dynamic categories.</p>
+            
+            <div class="game-wrapper">
+                <div id="game-container">
+                    <div id="play-area">
+                        <!-- Dynamic Sprite Layers mapped to state data -->
+                        <img id="sprite-base" class="sprite-layer" src="base.png" alt="Base Sprite">
+                        <img id="layer-tights" class="sprite-layer" src="" alt="">
+                        <img id="layer-socks" class="sprite-layer" src="" alt="">
+                        <img id="layer-bodysuit" class="sprite-layer" src="" alt="">
+                        <img id="layer-bottoms" class="sprite-layer" src="" alt="">
+                        <img id="layer-shoes" class="sprite-layer" src="" alt="">
+                        <img id="layer-tops" class="sprite-layer" src="" alt="">
+                        <img id="layer-dresses" class="sprite-layer" src="" alt="">
+                        <img id="layer-belts" class="sprite-layer" src="" alt="">
+                        <img id="layer-layers" class="sprite-layer" src="" alt="">
+                        <img id="layer-outer" class="sprite-layer" src="" alt="">
+                        <img id="layer-jewelry" class="sprite-layer" src="" alt="">
+                        <img id="layer-bags" class="sprite-layer" src="" alt="">
+                        <img id="layer-hair-acc" class="sprite-layer" src="" alt="">
+                    </div>
+
+                    <div id="prompt-bar">💬 V0.2 Catalog Loaded...</div>
+
+                    <div id="wardrobe-panel">
+                        <div id="catalog-header">THE WARDROBE</div>
+                        <div id="tabs">
+                            <button class="tab-btn active" onclick="changeCategory('tops')">TOPS</button>
+                            <button class="tab-btn" onclick="changeCategory('bottoms')">BOTTOMS</button>
+                            <button class="tab-btn" onclick="changeCategory('dresses')">DRESSES</button>
+                            <button class="tab-btn" onclick="changeCategory('outer')">OUTER</button>
+                            <button class="tab-btn" onclick="changeCategory('layers')">LAYERS</button>
+                            <button class="tab-btn" onclick="changeCategory('shoes')">SHOES</button>
+                            <button class="tab-btn" onclick="changeCategory('acc')">ACC</button>
+                        </div>
+                        <div id="item-grid"></div>
+                        <div id="controls">
+                            <button class="control-btn" onclick="randomize()">🎲 RANDOM</button>
+                            <button class="control-btn" onclick="resetAll()">↺ RESET</button>
+                            <button class="control-btn" style="background:#1d3822; color:#85db96;" onclick="finishOutfit()">✓ SAVE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+<script>
+    // WARDROBE CATALOG V0.2 - Complete 138 Asset Database
+    const wardrobe = {
+        tops: [
+            // Crop Tops
+            { id: "CT01", file: "ct01.png", thumb: "Navy Dino Crop", type: "tops" },
+            { id: "CT02", file: "ct02.png", thumb: "Black High-Neck Drop", type: "tops" },
+            { id: "CT03", file: "ct03.png", thumb: "White Mini Lace/Bow", type: "tops" },
+            { id: "CT04", file: "ct04.png", thumb: "Black Mini Lace/Bow", type: "tops" },
+            { id: "CT05", file: "ct05.png", thumb: "Black Square Tank", type: "tops" },
+            { id: "CT06", file: "ct06.png", thumb: "Black Cutout Pins", type: "tops" },
+            { id: "CT07", file: "ct07.png", thumb: "Wine Floral Bralette", type: "tops" },
+            { id: "CT08", file: "ct08.png", thumb: "Black Spaghetti Crop", type: "tops" },
+            { id: "CT09", file: "ct09.png", thumb: "Green Garden Corset", type: "tops" },
+            { id: "CT10", file: "ct10.png", thumb: "Light Blue Satin", type: "tops" },
+            { id: "CT11", file: "ct11.png", thumb: "Black Lace V-Neck", type: "tops" },
+            { id: "CT12", file: "ct12.png", thumb: "Black Ruffle Crop", type: "tops" },
+            { id: "CT13", file: "ct13.png", thumb: "White Halter Crop", type: "tops" },
+            { id: "CT14", file: "ct14.png", thumb: "Off-White Peekaboo", type: "tops" },
+            { id: "CT15", file: "ct15.png", thumb: "Brocade Corset Crop", type: "tops" },
+            { id: "CT16", file: "ct16.png", thumb: "Vintage Tube Fringe", type: "tops" },
+            { id: "CT17", file: "ct17.png", thumb: "White Ribbed Crop", type: "tops" },
+            { id: "CT18", file: "ct18.png", thumb: "Cinched Deep V Tee", type: "tops" },
+            { id: "CT19", file: "ct19.png", thumb: "Wine Off-Shoulder", type: "tops" },
+            { id: "CT20-25", file: "placeholder.png", thumb: "[Unresolved Set]", type: "tops" },
+            
+            // Tank Tops
+            { id: "TK01", file: "tk01.png", thumb: "Black Scallop Tank", type: "tops" },
+            { id: "TK02", file: "tk02.png", thumb: "Long Black Lace", type: "tops" },
+            { id: "TK03", file: "tk03.png", thumb: "White Band Tank", type: "tops" },
+            { id: "TK04", file: "tk04.png", thumb: "Black Halter", type: "tops" },
+            { id: "TK05", file: "tk05.png", thumb: "Long Black Square", type: "tops" },
+            { id: "TK06", file: "tk06.png", thumb: "Black Ribbed Lace", type: "tops" },
+            { id: "TK07", file: "tk07.png", thumb: "Grey Dog Print", type: "tops" },
+            { id: "TK08", file: "placeholder.png", thumb: "[Unresolved Tank]", type: "tops" },
+            { id: "TK09", file: "tk09.png", thumb: "Black Fitted Tank", type: "tops" },
+            
+            // T-Shirts & Long Sleeves
+            { id: "TS01", file: "ts01.png", thumb: "Black Scoop Tee", type: "tops" },
+            { id: "TS02", file: "ts02.png", thumb: "Beige Punk Tee", type: "tops" },
+            { id: "TS03", file: "ts03.png", thumb: "Skeletons Tee", type: "tops" },
+            { id: "TS04", file: "ts04.png", thumb: "Oversized Skeletons", type: "tops" },
+            { id: "TS05", file: "ts05.png", thumb: "White Met Baby Tee", type: "tops" },
+            { id: "TS06", file: "ts06.png", thumb: "Grey Ringer Tee", type: "tops" },
+            { id: "TS07", file: "ts07.png", thumb: "Green/Yellow Tie-Dye", type: "tops" },
+            { id: "TS08", file: "ts08.png", thumb: "Black Higher-Neck", type: "tops" },
+            { id: "TS09", file: "ts09.png", thumb: "Army Band Tee", type: "tops" },
+            { id: "TS10", file: "ts10.png", thumb: "Wine Ribbed Lace V", type: "tops" },
+            { id: "TS11", file: "ts11.png", thumb: "Black Lace Button", type: "tops" },
+            { id: "TS12", file: "ts12.png", thumb: "Black Off-Shoulder", type: "tops" },
+            { id: "TS13", file: "ts13.png", thumb: "B&W Graphic LS", type: "tops" },
+            { id: "TS14", file: "ts14.png", thumb: "Black/Orange LS", type: "tops" },
+            { id: "TS15", file: "ts15.png", thumb: "Black/Yellow LS", type: "tops" },
+            { id: "TS16", file: "ts16.png", thumb: "Black/Red Band LS", type: "tops" },
+            { id: "TS17", file: "ts17.png", thumb: "Grey Scoop LS", type: "tops" },
+            { id: "TS18", file: "ts18.png", thumb: "Oversized Office", type: "tops" },
+
+            // Bodysuits & Corsets
+            { id: "BS01", file: "bs01.png", thumb: "Beige Satin Bodysuit", type: "bodysuit" },
+            { id: "BS02", file: "bs02.png", thumb: "Black Spaghetti Body", type: "bodysuit" },
+            { id: "BS03", file: "bs03.png", thumb: "Blush Ruched Body", type: "bodysuit" },
+            { id: "C001", file: "c001.png", thumb: "White Corset", type: "tops" },
+            { id: "C002", file: "c002.png", thumb: "Black Corset", type: "tops" }
+        ],
+        bottoms: [
+            // Pants
+            { id: "P01", file: "p01.png", thumb: "Wide Black Jeans", type: "bottoms" },
+            { id: "P02", file: "p02.png", thumb: "Wine Corduroys", type: "bottoms" },
+            { id: "P03", file: "p03.png", thumb: "Floral Patch Skinny", type: "bottoms" },
+            { id: "P04", file: "p04.png", thumb: "Wide Blue Rips", type: "bottoms" },
+            { id: "P05", file: "p05.png", thumb: "Wide Black Rips", type: "bottoms" },
+            { id: "P06", file: "p06.png", thumb: "Dark Blue Bells", type: "bottoms" },
+            { id: "P07", file: "p07.png", thumb: "Azure Blue Bells", type: "bottoms" },
+            
+            // Shorts
+            { id: "S01", file: "s01.png", thumb: "Blue Denim Shorts", type: "bottoms" },
+            { id: "S02", file: "s02.png", thumb: "Black Jean Shorts", type: "bottoms" },
+            { id: "S03", file: "s03.png", thumb: "Grey-Wash Jorts", type: "bottoms" },
+            { id: "S04", file: "s04.png", thumb: "Long Blue Shorts", type: "bottoms" },
+            { id: "S05", file: "s05.png", thumb: "Fitted Mid Black", type: "bottoms" }
+        ],
+        dresses: [
+            { id: "D01", file: "d01.png", thumb: "Black Mod Lace", type: "dresses" },
+            { id: "D02", file: "d02.png", thumb: "Black Satin Mini", type: "dresses" },
+            { id: "D03", file: "d03.png", thumb: "Black Bow-Back", type: "dresses" },
+            { id: "D04", file: "d04.png", thumb: "Black Corset Dress", type: "dresses" },
+            { id: "D05", file: "d05.png", thumb: "Black A-Line Maxi", type: "dresses" },
+            { id: "D06", file: "d06.png", thumb: "Pink Satin Slit", type: "dresses" },
+            { id: "D07", file: "d07.png", thumb: "Black Satin Slit", type: "dresses" },
+            { id: "D08", file: "placeholder.png", thumb: "[Unresolved Dress]", type: "dresses" }
+        ],
+        outer: [
+            // Cardigans & Sweaters
+            { id: "CA01", file: "ca01.png", thumb: "Long Grey Cardigan", type: "outer" },
+            { id: "CA02", file: "ca02.png", thumb: "Light Green Cardigan", type: "outer" },
+            { id: "CA03", file: "ca03.png", thumb: "Long White Cardigan", type: "outer" },
+            { id: "CA04", file: "ca04.png", thumb: "Cropped Tied Black", type: "outer" },
+            { id: "SW01", file: "sw01.png", thumb: "Black Fitted Sweater", type: "outer" },
+            { id: "SW02", file: "sw02.png", thumb: "Grey Oversized Swtr", type: "outer" },
+            { id: "SW03", file: "sw03.png", thumb: "Sunset Rolled Swtr", type: "outer" },
+
+            // Jackets
+            { id: "J01", file: "j01.png", thumb: "Army Patch Jacket", type: "outer" },
+            { id: "J02", file: "j02.png", thumb: "Grey Oversized Flannel", type: "outer" },
+            { id: "J03", file: "j03.png", thumb: "Faux Leather Jacket", type: "outer" },
+            { id: "J04", file: "j04.png", thumb: "Cow-Print Fuzzy", type: "outer" },
+            { id: "J05", file: "j05.png", thumb: "Long Black Sheepskin", type: "outer" }
+        ],
+        layers: [
+            // Layering Pieces
+            { id: "L01", file: "l01.png", thumb: "Black Lace Robe", type: "layers" },
+            { id: "L02", file: "l02.png", thumb: "White Lace Turtleneck", type: "layers" },
+            { id: "L03", file: "l03.png", thumb: "Black Mesh Crop", type: "layers" },
+            { id: "L04", file: "l04.png", thumb: "White Sheer Mod", type: "layers" },
+            { id: "L05", file: "l05.png", thumb: "Red Lace Victorian", type: "layers" },
+            { id: "L06", file: "l06.png", thumb: "Beige Lace Skirt", type: "bottoms" }, // Skirts overlay bottoms
+            { id: "L07", file: "l07.png", thumb: "White Ribbed Lettuce", type: "layers" },
+            { id: "L08", file: "l08.png", thumb: "Grey V-Cut Crop", type: "layers" },
+            { id: "L09", file: "l09.png", thumb: "Black Wrap Crop", type: "layers" },
+
+            // Petticoat & Legwear
+            { id: "ACC05", file: "acc05.png", thumb: "Black Petticoat", type: "bottoms" },
+            { id: "ACC06", file: "acc06_p.png", thumb: "Sheer Pantyhose", type: "tights" },
+            { id: "ACC39", file: "acc06_f.png", thumb: "Black Fishnets", type: "tights" },
+            { id: "ACC40", file: "acc40.png", thumb: "Wine Boot Socks", type: "socks" },
+            { id: "ACC41", file: "acc41.png", thumb: "White Boot Socks", type: "socks" }
+        ],
+        shoes: [
+            { id: "SH01", file: "sh01.png", thumb: "Mid-Calf Demonias", type: "shoes" },
+            { id: "SH02", file: "sh02.png", thumb: "Beige Suede Boots", type: "shoes" },
+            { id: "SH03", file: "sh03.png", thumb: "Black Go-Go Boots", type: "shoes" },
+            { id: "SH04", file: "sh04.png", thumb: "Chelsea Boots", type: "shoes" },
+            { id: "SH05", file: "sh05.png", thumb: "High Stilettos", type: "shoes" },
+            { id: "SH06", file: "sh06.png", thumb: "Lower Heels", type: "shoes" },
+            { id: "SH07", file: "sh07.png", thumb: "Pink/White Nikes", type: "shoes" },
+            { id: "SH08", file: "sh08.png", thumb: "White/Pink Nikes", type: "shoes" }
+        ],
+        acc: [
+            // Belts
+            { id: "ACC01", file: "acc01.png", thumb: "Skinny Black Belt", type: "belts" },
+            { id: "ACC02", file: "acc02.png", thumb: "Thick Black Belt", type: "belts" },
+            { id: "ACC03", file: "acc03.png", thumb: "Silver Chain Belt", type: "belts" },
+            { id: "ACC04", file: "acc04.png", thumb: "Planet Leather Belt", type: "belts" },
+            
+            // Bags
+            { id: "ACC07", file: "acc07.png", thumb: "Black Under-Shoulder", type: "bags" },
+            { id: "ACC08", file: "acc08.png", thumb: "White/Brown Bag", type: "bags" },
+
+            // Earrings
+            { id: "ACC09", file: "acc09.png", thumb: "Silver Hoops", type: "jewelry" },
+            { id: "ACC10", file: "acc10.png", thumb: "Silver Fishhooks", type: "jewelry" },
+            { id: "ACC11", file: "acc11.png", thumb: "Saturn Dangles", type: "jewelry" },
+            { id: "ACC12", file: "acc12.png", thumb: "B&W Dice", type: "jewelry" },
+            { id: "ACC13", file: "acc13.png", thumb: "Teardrop Pearls", type: "jewelry" },
+            { id: "ACC14", file: "acc14.png", thumb: "Acrylic Sunflowers", type: "jewelry" },
+            { id: "ACC15", file: "acc15.png", thumb: "Barbie Heads", type: "jewelry" },
+            { id: "ACC16", file: "acc16.png", thumb: "Dangle Beetles", type: "jewelry" },
+            { id: "ACC17", file: "acc17.png", thumb: "Snake Hoops", type: "jewelry" },
+            { id: "ACC18", file: "acc18.png", thumb: "Blue Butterflies", type: "jewelry" },
+            { id: "ACC19", file: "acc19.png", thumb: "Black Iridescent Bfly", type: "jewelry" },
+            { id: "ACC20", file: "acc20.png", thumb: "Multicolor Butterflies", type: "jewelry" },
+            { id: "ACC21", file: "acc21.png", thumb: "Angel & Devil", type: "jewelry" },
+            { id: "ACC22", file: "acc22.png", thumb: "Pearl Studs", type: "jewelry" },
+            { id: "ACC23", file: "acc23.png", thumb: "4x Safety Pins", type: "jewelry" },
+            { id: "ACC24", file: "acc24.png", thumb: "Ruby Heart/Sword", type: "jewelry" },
+
+            // Necklaces & Bracelets
+            { id: "ACC25", file: "acc25.png", thumb: "Pearl Saturn Choker", type: "jewelry" },
+            { id: "ACC26", file: "acc26.png", thumb: "Saturn Pearl Dangle", type: "jewelry" },
+            { id: "ACC27", file: "acc27.png", thumb: "Saturn Pendant Mid", type: "jewelry" },
+            { id: "ACC28", file: "acc28.png", thumb: "Silver/Gold Ring", type: "jewelry" },
+            { id: "ACC29", file: "acc29.png", thumb: "Silver Pendant Mid", type: "jewelry" },
+            { id: "ACC30", file: "acc30.png", thumb: "Dual Choker/Dangle", type: "jewelry" },
+            { id: "ACC31", file: "acc31.png", thumb: "White Acrylic Bangle", type: "jewelry" },
+            { id: "ACC32", file: "acc32.png", thumb: "Silver Bead Bracelet", type: "jewelry" },
+
+            // Rings
+            { id: "ACC33", file: "acc33.png", thumb: "Dainty Stack Rings", type: "jewelry" },
+            { id: "ACC34", file: "acc34.png", thumb: "Jeweled Bug Ring", type: "jewelry" },
+            { id: "ACC35", file: "acc35.png", thumb: "Mid-Knuckle Ring", type: "jewelry" },
+            { id: "ACC36", file: "placeholder.png", thumb: "[Unresolved Ring]", type: "jewelry" },
+            { id: "ACC37", file: "acc37.png", thumb: "Grey-Quartz Spiked", type: "jewelry" },
+
+            // Hair Accessories (from original integration)
+            { id: "ACC_W_BOW", file: "acc_bow_w.png", thumb: "White Hair Bow", type: "hair-acc" },
+            { id: "ACC_B_BOW", file: "acc_bow_b.png", thumb: "Black Hair Bow", type: "hair-acc" },
+            { id: "ACC_HBAND", file: "acc_headband.png", thumb: "White Headband", type: "hair-acc" },
+            { id: "ACC_HPINS", file: "acc_pins.png", thumb: "Hair Pins", type: "hair-acc" }
+        ]
+    };
+
+    let activeCategory = "tops";
+    
+    // Expanded State Manager mapping all 13 distinct layer types
+    let equipped = {
+        "tights": null,
+        "socks": null,
+        "bodysuit": null,
+        "bottoms": null,
+        "shoes": null,
+        "tops": null,
+        "dresses": null,
+        "belts": null,
+        "layers": null,
+        "outer": null,
+        "jewelry": null,
+        "bags": null,
+        "hair-acc": null
+    };
+
+    function changeCategory(category) {
+        activeCategory = category;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('item-grid');
+        grid.innerHTML = '';
+        wardrobe[activeCategory].forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            
+            // Allow multiple items to be equipped within mixed layers by checking exact file match
+            if (equipped[item.type] === item.file) card.classList.add('equipped');
+            
+            card.onclick = () => toggleEquip(item);
+            
+            const thumb = document.createElement('div');
+            thumb.className = 'item-thumb';
+            thumb.style.backgroundImage = `url('${item.file}')`;
+            
+            const idLabel = document.createElement('div');
+            idLabel.className = 'item-id';
+            idLabel.innerText = `${item.id}\n${item.thumb}`;
+            
+            card.appendChild(thumb);
+            card.appendChild(idLabel);
+            grid.appendChild(card);
+        });
+    }
+
+    function toggleEquip(item) {
+        const layerElement = document.getElementById(`layer-${item.type}`);
+        
+        if (equipped[item.type] === item.file) {
+            equipped[item.type] = null; 
+            layerElement.src = ""; 
+            layerElement.alt = "";
+            showPrompt(`Removed ${item.thumb}`);
+        } else {
+            // Note: Currently replaces items of the same 'type'. To allow stacking (e.g., multiple rings), 
+            // the 'type' data structure would need granular breakdown (e.g., 'type: ring', 'type: necklace').
+            equipped[item.type] = item.file; 
+            layerElement.src = item.file; 
+            layerElement.alt = item.thumb;
+            showPrompt(`Put on ${item.thumb}!`);
+        }
+        renderGrid();
+    }
+
+    function showPrompt(text) { 
+        document.getElementById('prompt-bar').innerText = `💬 ${text}`; 
+    }
+
+    function randomize() {
+        Object.keys(wardrobe).forEach(cat => {
+            const list = wardrobe[cat];
+            toggleEquip(list[Math.floor(Math.random() * list.length)]);
+        });
+        showPrompt("Created a random styling combo!");
+    }
+
+    function resetAll() {
+        Object.keys(equipped).forEach(layer => {
+            equipped[layer] = null; 
+            document.getElementById(`layer-${layer}`).src = "";
+        });
+        showPrompt("Starting fresh! Base loaded."); 
+        renderGrid();
+    }
+
+    function finishOutfit() { 
+        showPrompt("Outfit saved to your photo diary!"); 
+    }
+
+    window.onload = () => { renderGrid(); };
+</script>
+</body>
+</html>
